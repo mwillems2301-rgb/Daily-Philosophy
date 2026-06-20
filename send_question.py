@@ -22,21 +22,6 @@ ANTHROPIC_MODEL = "claude-haiku-4-5-20251001"   # cost-effective for daily use
 TRMNL_BASE_URL  = "https://trmnl.com/api/custom_plugins"
 
 # -------------------------------------------
-# DST guard - skip if already sent today
-# -------------------------------------------
-def already_sent_today() -> bool:
-    last_sent = os.environ.get("ALREADY_SENT_CACHE", "").strip()
-    if not last_sent:
-        return False
-    tz = pytz.timezone(TIMEZONE)
-    today = datetime.now(tz).strftime("%Y-%m-%d")
-    if last_sent == today:
-        print(f"Already sent today ({today}). Skipping.")
-        return True
-    return False
-
-
-# -------------------------------------------
 # Question generation
 # -------------------------------------------
 SYSTEM_PROMPT = """\
@@ -138,9 +123,6 @@ def push_to_trmnl(question_data: dict, formatted_date: str) -> None:
 # Entry point
 # -------------------------------------------
 def main():
-    if already_sent_today():
-        sys.exit(0)
-
     tz  = pytz.timezone(TIMEZONE)
     now = datetime.now(tz)
     date_str = now.strftime("%A, %B %-d, %Y")   # e.g. "Friday, June 20, 2026"

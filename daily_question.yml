@@ -1,23 +1,25 @@
 name: Daily Philosophical Question
 
-# Brussels is UTC+1 (CET, Nov–Mar) and UTC+2 (CEST, Apr–Oct).
+# Brussels is UTC+1 (CET, Nov-Mar) and UTC+2 (CEST, Apr-Oct).
 # Both crons are scheduled to catch 6 AM local regardless of DST.
 # The Python script guards against double-firing on the same day.
 on:
   schedule:
-    - cron: '0 4 * * *'   # 6:00 AM CEST (Apr–Oct, UTC+2)
-    - cron: '0 5 * * *'   # 6:00 AM CET  (Nov–Mar, UTC+1)
+    - cron: '0 4 * * *'   # 6:00 AM CEST (Apr-Oct, UTC+2)
+    - cron: '0 5 * * *'   # 6:00 AM CET  (Nov-Mar, UTC+1)
   workflow_dispatch:       # Allow manual trigger from GitHub Actions UI
+
+permissions:
+  contents: read
+  actions: write          # needed to write the LAST_SENT_DATE repo variable
 
 jobs:
   send-question:
     runs-on: ubuntu-latest
     env:
-      ANTHROPIC_API_KEY:   ${{ secrets.ANTHROPIC_API_KEY }}
-      TRMNL_WEBHOOK_UUID:  ${{ secrets.TRMNL_WEBHOOK_UUID }}
-      # Optional: keep a "last sent" date to avoid the double-fire on
-      # the DST boundary days (there are only 2 per year).
-      ALREADY_SENT_CACHE:  ${{ vars.LAST_SENT_DATE }}
+      ANTHROPIC_API_KEY:  ${{ secrets.ANTHROPIC_API_KEY }}
+      TRMNL_WEBHOOK_UUID: ${{ secrets.TRMNL_WEBHOOK_UUID }}
+      ALREADY_SENT_CACHE: ${{ vars.LAST_SENT_DATE }}
 
     steps:
       - name: Check out repository
@@ -34,8 +36,6 @@ jobs:
       - name: Generate & send philosophical question
         run: python send_question.py
 
-      # Store today's date so the second cron (if it fires the same day)
-      # can skip without calling the APIs again.
       - name: Save last-sent date
         if: success()
         run: |

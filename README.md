@@ -68,28 +68,17 @@ The workflow schedules two cron jobs to cover Brussels time all year:
   0 4 * * *   ->  04:00 UTC  ->  06:00 CEST (Apr-Oct, UTC+2)
   0 5 * * *   ->  05:00 UTC  ->  06:00 CET  (Nov-Mar, UTC+1)
 
-On DST transition days, both crons fire in the same local day. The Python
-script guards against double-sending by checking the LAST_SENT_DATE
-repository variable (written automatically after each successful run).
+On the two DST transition days per year, both crons fire within the same
+local calendar day, so you may get two questions instead of one on those
+specific days. This is harmless - your TRMNL will simply display whichever
+arrived most recently. Earlier versions of this plugin tried to suppress
+this with a repository-variable guard, but GITHUB_TOKEN cannot write
+repository variables via the API (a hard GitHub limitation, not a
+configurable permission), so that mechanism was removed in favor of
+simplicity and reliability.
 
 If you're in a different timezone, adjust the cron lines and use
 crontab.guru to find the right UTC offset.
-
-## Permissions Note (important)
-
-The workflow needs `actions: write` permission on its GITHUB_TOKEN so the
-final step can save the LAST_SENT_DATE repository variable via `gh variable
-set`. This is already declared in the workflow YAML:
-
-  permissions:
-    contents: read
-    actions: write
-
-If your organization enforces read-only default tokens at the org level,
-this declared permission in the workflow file should still override it for
-this specific workflow. If it doesn't (some orgs lock this down completely),
-go to Settings -> Actions -> General -> Workflow permissions on the repo and
-select "Read and write permissions".
 
 ## Customisation
 
@@ -113,9 +102,6 @@ Change the schedule - update the two cron lines in
 └── README.md
 
 ## Troubleshooting
-
-Job fails only on the last step ("Save last-sent date")
-  -> Almost always a permissions issue. See "Permissions Note" above.
 
 Nothing appears on TRMNL after the workflow succeeds
   -> Check TRMNL_WEBHOOK_UUID is the UUID only (not the full URL), and that

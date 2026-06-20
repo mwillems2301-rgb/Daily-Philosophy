@@ -5,13 +5,16 @@ name: Daily Philosophical Question
 # The Python script guards against double-firing on the same day.
 on:
   schedule:
+    # Brussels is UTC+1 (CET, Nov-Mar) and UTC+2 (CEST, Apr-Oct).
+    # Both crons fire 6 AM local time; on the 2 DST-transition days
+    # per year this can produce two questions instead of one -
+    # harmless, the device just shows whichever arrived last.
     - cron: '0 4 * * *'   # 6:00 AM CEST (Apr-Oct, UTC+2)
     - cron: '0 5 * * *'   # 6:00 AM CET  (Nov-Mar, UTC+1)
   workflow_dispatch:       # Allow manual trigger from GitHub Actions UI
 
 permissions:
   contents: read
-  actions: write          # needed to write the LAST_SENT_DATE repo variable
 
 jobs:
   send-question:
@@ -19,7 +22,6 @@ jobs:
     env:
       ANTHROPIC_API_KEY:  ${{ secrets.ANTHROPIC_API_KEY }}
       TRMNL_WEBHOOK_UUID: ${{ secrets.TRMNL_WEBHOOK_UUID }}
-      ALREADY_SENT_CACHE: ${{ vars.LAST_SENT_DATE }}
 
     steps:
       - name: Check out repository
@@ -35,16 +37,3 @@ jobs:
 
       - name: Generate & send philosophical question
         run: python send_question.py
-
-      - name: Save last-sent date
-        if: success()
-        run: |
-          TODAY=$(python -c "
-          import pytz, datetime
-          tz = pytz.timezone('Europe/Brussels')
-          print(datetime.datetime.now(tz).strftime('%Y-%m-%d'))
-          ")
-          echo "Setting LAST_SENT_DATE=$TODAY"
-          gh variable set LAST_SENT_DATE --body "$TODAY"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
